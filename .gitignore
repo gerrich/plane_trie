@@ -2,5 +2,5 @@
 *.swo
 Makefile
 CMakeFiles
-CMakeCache
+CMakeCache.txt
 
