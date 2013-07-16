@@ -23,6 +23,7 @@ struct plane_node_t {
 
 
 struct temp_node_t {
+  temp_node_t() : value() {}
   value_t value;
 
   std::vector<char_t> key_list;
@@ -67,6 +68,23 @@ size_t save_to_file(std::ostream &file, size_t offset, temp_node_t *node) {
 
   return write_count;  
 }
+
+size_t str_match_len(const char_t *lhs, const char_t* rhs) {
+  size_t i = 0;
+  while(lhs[i] and lhs[i] == rhs[i]) {
+    ++i;
+  }
+  return i;
+}
+size_t str_match_len(const std::basic_string<char_t> &lhs, const std::basic_string<char_t> &rhs) {
+  size_t i = 0;
+  size_t min_len = std::min(lhs.size(), rhs.size());
+  while(i < min_len and lhs[i] == rhs[i]) {
+    ++i;
+  }
+  return i;
+}
+
 // save nodes in post-order from sorted word list 
 // returns root node offset
 template <typename word_list_t>
@@ -81,51 +99,31 @@ size_t build_trie(std::ostream &file, word_list_t &word_list) {
 
   while( not word_list.empty()) {
 
-    typename word_list_t::value_type &pair = word_list.front();
+    typename word_list_t::value_type const &pair = word_list.front();
     const std::string &word = pair.first;
     const value_t &value = pair.second;
 
     // chech word order: word > last_word
     if (std::less<std::string>().operator()(word, last_word)) {
-      std::cout << "less: " << word << " " << last_word << std::endl;
       word_list.pop();
       ++ignore_count;
       continue;
     }
-    std::cout << "word: "  << word << std::endl;
     // go up
-    size_t match_len = last_word.size();
-    while (match_len > word.size()) {
-      size_t write_size = save_to_file(file, offset, node_history[match_len]);
-      delete node_history[match_len]; // delete saved nodes
-      node_history[match_len - 1]->ptr_list.back() = NULL; // set null pointer there
-      node_history[match_len - 1]->offset_list.back() = offset; // save offset of saved node
-      offset += write_size;
-      std::cout << "1: " << match_len << "\twsize: " << write_size << "\toffset: " << offset << std::endl; 
-      --match_len;
-    }
+    size_t match_len = str_match_len(word, last_word);
 
-    while (match_len > 0 and last_word[match_len - 1] != word[match_len - 1]) {
-      // COPY-PASTE
-      size_t write_size = save_to_file(file, offset, node_history[match_len]);
-      delete node_history[match_len]; // delete saved nodes
-      node_history[match_len - 1]->ptr_list.back() = NULL; // set null pointer there
-      node_history[match_len - 1]->offset_list.back() = offset; // save offset of saved node
+    for (size_t pos = last_word.size(); pos > match_len; --pos) {
+      size_t write_size = save_to_file(file, offset, node_history[pos]);
+      delete node_history[pos]; // delete saved nodes
+      node_history[pos - 1]->ptr_list.back() = NULL; // set null pointer there
+      node_history[pos - 1]->offset_list.back() = offset; // save offset of saved node
       offset += write_size;
-      std::cout << "2: " << match_len << "\twsize: " << write_size << "\toffset: " << offset << std::endl; 
-      --match_len;
     }
 
     // go down
     // add node(s)
-    std::cout << "HISTORY: ";
     node_history.resize(word.size() + 1);
-    for (size_t i = 0; i < node_history.size(); ++i) {
-      std::cout << node_history[i] << " ";
-    }
-    std::cout << std::endl;
     for (; match_len < word.size(); ++match_len) {
-      std::cout << "3: " << match_len << std::endl; 
       temp_node_t *new_node = new temp_node_t;
       node_history[match_len]->key_list.push_back(word[match_len]);
       node_history[match_len]->offset_list.push_back(0);
@@ -147,15 +145,11 @@ size_t build_trie(std::ostream &file, word_list_t &word_list) {
     node_history[match_len - 1]->ptr_list.back() = NULL; // set null pointer there
     node_history[match_len - 1]->offset_list.back() = offset; // save offset of saved node
     offset += write_size;
-    std::cout << "1: " << match_len << "\twsize: " << write_size << "\toffset: " << offset << std::endl; 
     --match_len;
   }
 
   size_t root_offset = offset;
   size_t write_size = save_to_file(file, offset, root_node);
-  std::cout << "0: " << 0 << "\twsize: " << write_size << "\toffset: " << offset + write_size << std::endl; 
-  
-  std::cout << "root_offset: " << root_offset << std::endl;
 
   BOOST_STATIC_ASSERT(sizeof(root_offset) == 8);
   write(file, &root_offset, sizeof(root_offset));
@@ -169,27 +163,23 @@ size_t build_trie(std::ostream &file, word_list_t &word_list) {
 // load trie structure from mapped region
 void load_trie(void* addr, size_t size, trie_t& trie) {
   size_t root_offset = *(size_t*)((char*)(addr) + size - sizeof(void*));
-  std::cout << "size: " << size << "\troot_offset: " << root_offset << std::endl;  
   trie.addr = addr;
   trie.segment_size = size;
   trie.root_node = reinterpret_cast<plane_node_t*>((char*)addr + root_offset);
 }
 
 value_t get_node(const trie_t &trie, const char_t* word) {
+  BOOST_STATIC_ASSERT(sizeof(size_t) == sizeof(void*));
   const plane_node_t *curr_node = trie.root_node;
-  std::cout << "get_node: " << word << std::endl;
   for (size_t i = 0; word[i] != 0; ++i) {
     char_t *key_begin = (char_t*)((char*)(curr_node) + sizeof(plane_node_t));
     char_t *key_end = key_begin + curr_node->child_count;
     char_t *key_ptr = std::lower_bound(key_begin, key_end, word[i]);
-    std::cout << "[" << word[i] << "] " << curr_node->child_count << " " << curr_node->value << " [" << *key_ptr << "]" << std::endl;
-    if (*key_ptr != word[i]) {
-      std::cout << "fail" << std::endl;
+    if (key_end == key_ptr or *key_ptr != word[i]) {
       return 0;
     }
     size_t *offset_begin = (size_t*)((char*)(curr_node) + sizeof(plane_node_t) + round_up_8(curr_node->child_count));
     size_t new_offset = *(offset_begin + (size_t)(key_ptr - key_begin));
-    std::cout << "ok new_offset:" << new_offset << std::endl;
     curr_node = (const plane_node_t*)((char*)trie.addr + new_offset);
   }
   return curr_node->value;
