@@ -2,16 +2,48 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
 enable_testing()
 
-add_executable(plane_trie_test
-  plane_trie_test.cpp
+
+add_executable(build_trie
+  build_trie.cpp
 )
 
-add_executable(string_less_test
-  string_less_test.cpp)
-target_link_libraries(string_less_test ${TEST_SOURCES} gtest gtest_main pthread )
-add_test(NAME string_less_test COMMAND string_less_test)
+add_executable(ask_plane_trie
+  ask_plane_trie.cpp
+)
+add_executable(fuzzy_search_plane_trie
+  fuzzy_search_plane_trie.cpp
+)
+add_executable(file_adapter_test
+  file_adapter_test.cpp
+)
 
-add_executable(round_up_test
-  round_up_test.cpp)
-target_link_libraries(round_up_test ${TEST_SOURCES} gtest gtest_main pthread )
-add_test(NAME round_up_test COMMAND round_up_test)
+set(TEST_NAME plane_trie_test)
+set(TEST_SOURCES ${TEST_NAME}.cpp)
+add_executable(${TEST_NAME} ${TEST_SOURCES})
+target_link_libraries(${TEST_NAME} gtest gtest_main pthread )
+add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
+
+set(TEST_NAME string_less_test)
+set(TEST_SOURCES ${TEST_NAME}.cpp)
+add_executable(${TEST_NAME} ${TEST_SOURCES})
+target_link_libraries(${TEST_NAME} gtest gtest_main pthread )
+add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
+
+set(TEST_NAME round_up_test)
+set(TEST_SOURCES ${TEST_NAME}.cpp)
+add_executable(${TEST_NAME} ${TEST_SOURCES})
+target_link_libraries(${TEST_NAME} gtest gtest_main pthread )
+add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
+
+set(TEST_NAME istream_adapter_test)
+set(TEST_SOURCES ${TEST_NAME}.cpp)
+add_executable(${TEST_NAME} ${TEST_SOURCES})
+target_link_libraries(${TEST_NAME} gtest gtest_main pthread )
+add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
+
+set(TEST_NAME queue_test)
+set(TEST_SOURCES ${TEST_NAME}.cpp)
+add_executable(${TEST_NAME} ${TEST_SOURCES})
+target_link_libraries(${TEST_NAME} gtest gtest_main pthread )
+add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
+

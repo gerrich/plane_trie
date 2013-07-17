@@ -1,10 +1,15 @@
-#include <iostream>
-#include "istream_adapter.h"
+//#include <iostream>
+//#include "istream_adapter.h"
+#include <cstdio>
+#include "file_adapter.h"
 #include "plane_trie.hpp"
+#include <cstdio>
 
 int main() {
-  istream_adapter_t adapter(std::cin);
-  build_trie(std::cout, adapter);
+//  std::ios_base::sync_with_stdio(false);
+
+  file_adapter_t adapter(stdin);
+  build_trie(stdout, adapter);
 
   return 0;
 }
