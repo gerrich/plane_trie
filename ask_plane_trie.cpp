@@ -13,6 +13,8 @@ int main(int argc, char**argv) {
  
   trie_t trie;
   load_trie(my_map.data(), my_map.size(), trie);
+  
+  std::ios_base::sync_with_stdio(false);
 
   while(std::cin.good()) {
     std::string line;
