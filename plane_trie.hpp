@@ -28,7 +28,7 @@ struct plane_node_t {
 
 
 struct temp_node_t {
-  temp_node_t() : value() {}
+  temp_node_t() : value(0) {}
   value_t value;
 
   std::vector<char_t> key_list;
@@ -106,6 +106,7 @@ size_t build_trie(file_t &file, word_list_t &word_list) {
   size_t offset = 0;
 
   temp_node_t *root_node = new temp_node_t;
+
   std::vector<temp_node_t*> node_history;
   node_history.push_back(root_node);
 
@@ -228,7 +229,8 @@ struct task_t {
   const plane_node_t *node;
 };
 
-void fuzzy_search(const trie_t &trie, const char_t* word, size_t max_dist) {
+template <typename output_t>
+void fuzzy_search(const trie_t &trie, const char_t* word, size_t max_dist, output_t &output) {
   //task: word_pos, dict_pos, ttl
   queue_t<task_t, (sizeof(task_t) * 1024 - sizeof(void*)) / sizeof(task_t)> q;
   //std::queue<task_t> q;
@@ -257,7 +259,7 @@ void fuzzy_search(const trie_t &trie, const char_t* word, size_t max_dist) {
 
       // replace
       // foreach curr_node keys
-      if (task.ttl and word[task.word_pos]) {
+      if (word[task.word_pos]) {
         for (size_t i = 0; i < task.node->child_count; ++i) {
           const char_t &key = ((char_t*)((char*)task.node + sizeof(plane_node_t)))[i];
           if (key == word[task.word_pos]) {
@@ -290,11 +292,179 @@ void fuzzy_search(const trie_t &trie, const char_t* word, size_t max_dist) {
     } else {
       // report found word
       if (task.node->value) {
-        std::cout << "FOUND: " << task.node->value << std::endl;
+        output.insert(task.node->value);
+//        std::cout << "FOUND: " << task.node->value << std::endl;
       }
     }
     if (not no_pop)
       q.pop();
+  }
+}
+
+
+
+struct _fuzzy_search_task_t {
+  const plane_node_t *dict_node;
+  const plane_node_t *word_node;
+  size_t ttl;
+};
+
+struct _fuzzy_search_greater_task_t {
+  bool operator() (const _fuzzy_search_task_t& lhs, const _fuzzy_search_task_t& rhs) const {
+    // descendents have lower addreses tan their parents
+    // siblings go in key order
+    return 
+      lhs.word_node > rhs.word_node or
+      lhs.word_node == rhs.word_node and (
+        lhs.dict_node > rhs.dict_node or
+        lhs.dict_node == rhs.dict_node and
+        lhs.ttl < rhs.ttl
+      );
+  }
+};
+
+inline bool _empty_node(const plane_node_t* node) {
+  return (node->value == 0 and node->child_count == 0);
+}
+
+// get fuzy intersection of two tries
+// lower_limit - lowest word in task trie
+// upper_limit - a word after largest word in task trie
+//
+// output format: pairs: word_id -> dict_id
+template <typename output_t>
+void fuzzy_search(
+    const trie_t &dict_trie,
+    const trie_t &word_trie,
+    const char_t *lower_limit,
+    const char_t *upper_limit,
+    size_t max_dist,
+    output_t &output) {
+
+  less_t _less;
+
+  typedef _fuzzy_search_task_t task_t;
+  typedef _fuzzy_search_greater_task_t greater_task_t;
+
+  struct equal_task_t {
+  bool operator()(const task_t &lhs, const task_t &rhs) {
+    return 
+      lhs.word_node == rhs.word_node and 
+      lhs.dict_node == rhs.dict_node;// and
+//      lhs.ttl <= rhs.ttl;
+  }
+  };
+
+  //queue_t<task_t, (sizeof(task_t) * 1024 - sizeof(void*)) / sizeof(task_t)> q;
+  std::priority_queue<task_t, typename std::vector<task_t>, greater_task_t> q;
+  q.push((task_t){dict_trie.root_node, word_trie.root_node, max_dist});
+
+//  size_t step_no = 0;
+//  size_t skip_no = 0;
+  while (! q.empty() ) {
+    //++step_no;
+    const task_t task = q.top();
+    q.pop();
+
+//    while (! q.empty() and equal_task_t()(q.top(), task)) {
+//      ++skip_no;
+//      q.pop();
+//    }
+
+//    if (step_no % 10000 == 0) {
+//      std::cout << "step_no:" << step_no << "\tq_size:" << q.size() << "\tskip_no:" << skip_no <<"\t"<<task.word_node << "\t"<<task.dict_node  << "\t" << task.ttl<< std::endl;
+//    }
+
+    const size_t *dict_offset_begin = _get_offset_begin(task.dict_node);
+    const size_t *word_offset_begin = _get_offset_begin(task.word_node);
+    
+    if (task.ttl) {
+      //delete
+      for (size_t i = 0; i < task.dict_node->child_count; ++i) {
+        const plane_node_t *dict_child = _get_node(dict_trie, dict_offset_begin[i]);
+        if (_empty_node(dict_child)) continue;
+        task_t new_task = task;
+        new_task.ttl -= 1;
+        new_task.dict_node = dict_child;
+        q.push(new_task);
+      }
+
+      // insert
+      for (size_t i = 0; i < task.word_node->child_count; ++i) {
+        const plane_node_t *word_child = _get_node(word_trie, word_offset_begin[i]);
+        if (_empty_node(word_child)) continue;
+        task_t new_task = task;
+        new_task.ttl -= 1;
+        new_task.word_node = word_child;
+        q.push(new_task);
+      }
+
+      // replace
+      // foreach curr_node keys
+      for (size_t dict_child_id = 0; dict_child_id < task.dict_node->child_count; ++dict_child_id) {
+        const plane_node_t *dict_child = _get_node(dict_trie, dict_offset_begin[dict_child_id]);
+        if (_empty_node(dict_child)) continue;
+
+        for (size_t word_child_id = 0; word_child_id < task.word_node->child_count; ++word_child_id) {
+          const plane_node_t *word_child = _get_node(word_trie, word_offset_begin[word_child_id]);
+          if (_empty_node(word_child)) continue;
+
+          const char_t &dict_key = ((char_t*)((char*)task.dict_node + sizeof(plane_node_t)))[dict_child_id];
+          const char_t &word_key = ((char_t*)((char*)task.word_node + sizeof(plane_node_t)))[word_child_id];
+          
+          if (dict_key == word_key) {
+            continue; // ignore replace if it's the same as paste
+          }
+
+          task_t new_task = task;
+          new_task.ttl -= 1;
+          new_task.dict_node = dict_child;
+          new_task.word_node = word_child;
+          q.push(new_task);
+        }
+      }
+    }
+    
+    // paste
+    for (size_t i = 0, j = 0; i < task.dict_node->child_count && j < task.word_node->child_count; ) {
+      const char_t &dict_key = ((char_t*)((char*)task.dict_node + sizeof(plane_node_t)))[i];
+      const char_t &word_key = ((char_t*)((char*)task.word_node + sizeof(plane_node_t)))[j];
+
+      if (_less(dict_key, word_key)) {
+        ++i;
+        continue;
+      } else if (_less(word_key, dict_key)) {
+        ++j;
+        continue;
+      } else {
+        const plane_node_t *dict_child = _get_node(dict_trie, dict_offset_begin[i]);
+        if (_empty_node(dict_child)) {
+          ++i;
+          ++j;
+          continue;
+        }
+        
+        const plane_node_t *word_child = _get_node(word_trie, word_offset_begin[j]);
+        if (_empty_node(word_child)) {
+          ++i;
+          ++j;
+          continue;
+        }
+        //std::cout << "EQ " << i << " " << j << " : " << word_key << " " << dict_key << std::endl; 
+        task_t new_task = task;
+        new_task.dict_node = dict_child;
+        new_task.word_node = word_child;
+        q.push(new_task);
+       
+        ++i;
+        ++j;
+      }
+
+    }
+
+    if (task.dict_node->value && task.word_node->value) {
+      output.insert(std::make_pair(task.word_node->value, task.dict_node->value));
+    }
   }
 }
 

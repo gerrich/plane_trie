@@ -13,6 +13,9 @@ add_executable(ask_plane_trie
 add_executable(fuzzy_search_plane_trie
   fuzzy_search_plane_trie.cpp
 )
+add_executable(fuzzy_intersection_plane_trie
+  fuzzy_intersection_plane_trie.cpp
+)
 add_executable(file_adapter_test
   file_adapter_test.cpp
 )

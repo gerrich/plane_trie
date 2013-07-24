@@ -33,7 +33,7 @@ int main(int argc, char**argv) {
   size_t max_dist = 3;
 
   printer_t printer;
-  fuzzy_search(dict_trie, word_trie, NULL, NULL, 0, printer);
+  fuzzy_search(dict_trie, word_trie, NULL, NULL, 2, printer);
 
   return 0;
 }

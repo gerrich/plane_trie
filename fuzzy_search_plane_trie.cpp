@@ -1,7 +1,10 @@
 #include <iostream>
-#include "plane_trie.hpp"
+#include <set>
+#include <iterator>
 
+#include "plane_trie.hpp"
 #include "mmap.hpp"
+
 
 int main(int argc, char**argv) {
   if (argc < 2) {
@@ -21,7 +24,12 @@ int main(int argc, char**argv) {
     getline(std::cin, line);
     if (line.empty()) continue;
 
-    fuzzy_search(trie, line.c_str(), max_dist);
+    std::set<uint32_t> result;
+    fuzzy_search(trie, line.c_str(), max_dist, result);
+    
+    std::cout << line << "\t";
+    std::copy(result.begin(), result.end(), std::ostream_iterator<uint32_t>(std::cout, " "));
+    std::cout << std::endl;
     //std::cout << line << "\t" << value << std::endl;
   }
 

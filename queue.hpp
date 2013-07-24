@@ -33,6 +33,16 @@ public:
     }
   }
 
+  size_t size() const {
+    const node_t *node = head_;
+    size_t count = 0;
+    for (; node->next_; node = node->next_) {
+      count += 1;
+    }
+    count *= block_size;
+    count += tail_offset_ - head_offset_;
+    return count;
+  }
   bool empty() const {
     return (head_ == tail_ and head_offset_ == tail_offset_);
   }
