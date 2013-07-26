@@ -3,6 +3,9 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 enable_testing()
 
 
+add_executable(build_index
+  build_index.cpp
+)
 add_executable(build_trie
   build_trie.cpp
 )

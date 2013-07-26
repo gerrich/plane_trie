@@ -10,6 +10,8 @@
 
 class mmap_t {
 public:
+  mmap_t() {}
+
   mmap_t(const char* fname) {
     struct stat statbuf;
 
