@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 
 #include "plane_trie.hpp"
+#include "plane_trie_build.hpp"
 
 #include <stdint.h>
 

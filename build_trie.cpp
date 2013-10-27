@@ -2,7 +2,7 @@
 //#include "istream_adapter.h"
 #include <cstdio>
 #include "file_adapter.h"
-#include "plane_trie.hpp"
+#include "plane_trie_build.hpp"
 #include <cstdio>
 
 int main() {
