@@ -35,7 +35,7 @@ struct istream_adapter_t {
 
   mutable std::string next_line_;
   uint32_t lcount_;
-  mutable std::istream &is_;
+  std::istream &is_;
   bool eof_;
   mutable value_type pair_;
 };
