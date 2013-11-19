@@ -9,6 +9,7 @@ add_executable(build_index
 add_executable(build_trie
   build_trie.cpp
 )
+add_executable(build_half_trie build_half_trie.cpp)
 
 add_executable(ask_plane_trie
   ask_plane_trie.cpp
