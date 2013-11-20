@@ -11,9 +11,9 @@ add_executable(build_trie
 )
 add_executable(build_half_trie build_half_trie.cpp)
 
-add_executable(ask_plane_trie
-  ask_plane_trie.cpp
-)
+add_executable(ask_plane_trie ask_plane_trie.cpp)
+add_executable(ask_half_trie ask_half_trie.cpp)
+
 add_executable(fuzzy_search_plane_trie
   fuzzy_search_plane_trie.cpp
 )

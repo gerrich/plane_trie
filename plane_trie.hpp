@@ -65,6 +65,12 @@ void load_trie(void* addr, size_t size, trie_t& trie) {
   trie.root_node = reinterpret_cast<plane_node_t*>((char*)addr + root_offset);
 }
 
+void load_trie_by_root_offset(void* addr, size_t root_offset, trie_t& trie) {
+  trie.addr = addr;
+  trie.segment_size = root_offset; //TODO 
+  trie.root_node = reinterpret_cast<plane_node_t*>((char*)addr + root_offset);
+}
+
 inline const char_t* _get_key_begin(const plane_node_t *node) {
   return (char_t*)((char*)(node) + sizeof(plane_node_t));
 }
@@ -357,7 +363,7 @@ void fuzzy_search(
 template <typename exit_condition_t>
 inline bool trie_find_impl(const trie_t &trie, const char_t* key, exit_condition_t &exit_condition, uint32_t &value) {
   const plane_node_t *current_node = trie.root_node;
-  for (size_t i = 0; exit_condition(key, i); ++i) {
+  for (size_t i = 0; !exit_condition(key, i); ++i) {
     const plane_node_t *next_node;
     if (_find_child_node(trie, current_node, key[i], &next_node)) {
       current_node = next_node;
@@ -370,7 +376,7 @@ inline bool trie_find_impl(const trie_t &trie, const char_t* key, exit_condition
 }
 
 struct zero_str_exit_condition_t {
-  inline bool operator()(const char_t*key, size_t i) {
+  inline bool operator()(const char_t*key, size_t i) const {
     return key[i] == '\0';
   }
 };
@@ -381,7 +387,7 @@ bool trie_find(const trie_t &trie, const char_t* key, uint32_t &value) {
 
 struct str_len_exit_condition_t {
   str_len_exit_condition_t(size_t len): len_(len) {}
-  inline bool operator()(const char_t* /*key*/, size_t i) {
+  inline bool operator()(const char_t* /*key*/, size_t i) const {
     return i >= len_;
   }
   size_t len_;

@@ -55,7 +55,15 @@ struct build_trie_context_t {
   build_trie_context_t() 
     : offset(0)
     , ignore_count(0)
-    ,root_node(NULL) {}
+    , root_node(NULL)
+  {
+    root_node = new temp_node_t;
+    node_history.push_back(root_node);
+  }
+
+  ~build_trie_context_t() {
+    delete root_node; 
+  }
 };
 
 
@@ -106,7 +114,8 @@ size_t build_trie_commit(file_t &file, build_trie_context_t &context) {
   }
 
   size_t root_offset = context.offset;
-  /*size_t write_size = */save_to_file(file, context.offset, context.root_node);
+  size_t write_size = save_to_file(file, context.offset, context.root_node);
+  context.offset += write_size;
   return root_offset;
 }
 
@@ -115,8 +124,8 @@ size_t build_trie_commit(file_t &file, build_trie_context_t &context) {
 template <typename file_t, typename word_list_t>
 size_t build_trie(file_t &file, word_list_t &word_list) {
   build_trie_context_t context;
-  context.root_node = new temp_node_t;
-  context.node_history.push_back(context.root_node);
+  //context.root_node = new temp_node_t;
+  //context.node_history.push_back(context.root_node);
 
   while( not word_list.empty()) {
 
