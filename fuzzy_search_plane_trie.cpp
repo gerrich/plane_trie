@@ -36,7 +36,8 @@ int main(int argc, char**argv) {
     if (line.empty()) continue;
 
     std::set<uint32_t> result;
-    fuzzy_search(trie, line.c_str(), max_dist, result);
+    inserter_out_t< std::set<uint32_t> > out(result); 
+    fuzzy_search(trie, line.c_str(), max_dist, out);
     
     std::cout << line << "\t";
     if (has_index) {

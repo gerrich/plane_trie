@@ -2,6 +2,7 @@
 
 #include "plane_trie.hpp"
 #include <cstring>
+#include <set>
 
 struct half_trie_t {
   trie_t prefix_trie;
@@ -65,4 +66,30 @@ size_t load_half_trie(void *data, size_t size, half_trie_t &half_trie) {
   half_trie.size_ = size;  
   half_trie.second_offset = header_size + prefix_size;
   half_trie.offset_list = (size_t*)(((char*)data) +  header_size + prefix_size + second_size);
+}
+
+template <typename output_t>
+void fuzzy_search(const half_trie_t &half_trie, const char_t *key, size_t max_dist, output_t &output) {
+  size_t key_len = strlen(key);
+  size_t half_len = key_len / 2;
+  uint32_t second_trie_id = 0;
+  std::cerr << "prefix key: [" << std::string(key, half_len) << "] second_key: [" << std::string(key + half_len, key_len - half_len) << "]" << std::endl;
+
+  for (size_t pfx_len = std::max(max_dist / 2, half_len) - max_dist / 2;
+      pfx_len <= std::min(key_len, half_len + max_dist / 2);
+      ++pfx_len)
+  {
+    map_out_t out;
+    fuzzy_search(half_trie.prefix_trie, key, pfx_len, max_dist / 2, out);
+  
+    for (map_out_t::storage_t::iterator it = out.storage_.begin(); it != out.storage_.end(); ++it) {
+      trie_t second_trie;
+      if (!_get_second_trie_by_id(half_trie, it->first, second_trie)) { 
+        std::cerr << "can't get second trie: " << it->first << " : " << it ->second << std::endl;
+        continue; // failed to get second trie
+      }
+      // get spent dist from frefix_out
+      fuzzy_search(second_trie, &key[pfx_len], key_len - pfx_len, max_dist - it->second, output);
+    }
+  }
 }

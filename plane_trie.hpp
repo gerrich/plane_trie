@@ -118,8 +118,14 @@ struct task_t {
   const plane_node_t *node;
 };
 
-template <typename output_t>
-void fuzzy_search(const trie_t &trie, const char_t* word, size_t max_dist, output_t &output) {
+template <typename exit_condition_t, typename output_t>
+void fuzzy_search_impl(
+    const trie_t &trie,
+    const char_t* word,
+    const exit_condition_t &exit_condition,
+    size_t max_dist, 
+    output_t &output
+){
   //task: word_pos, dict_pos, ttl
   queue_t<task_t, (sizeof(task_t) * 1024 - sizeof(void*)) / sizeof(task_t)> q;
   //std::queue<task_t> q;
@@ -140,7 +146,7 @@ void fuzzy_search(const trie_t &trie, const char_t* word, size_t max_dist, outpu
       }
 
       // insert
-      if (task.ttl and word[task.word_pos]) {
+      if (task.ttl and !exit_condition(word, task.word_pos)) {
         q.push(task);
         q.back().ttl -= 1;
         q.back().word_pos += 1;
@@ -148,7 +154,7 @@ void fuzzy_search(const trie_t &trie, const char_t* word, size_t max_dist, outpu
 
       // replace
       // foreach curr_node keys
-      if (word[task.word_pos]) {
+      if (!exit_condition(word, task.word_pos)) {
         for (size_t i = 0; i < task.node->child_count; ++i) {
           const char_t &key = ((char_t*)((char*)task.node + sizeof(plane_node_t)))[i];
           if (key == word[task.word_pos]) {
@@ -166,7 +172,7 @@ void fuzzy_search(const trie_t &trie, const char_t* word, size_t max_dist, outpu
     }
     
     bool no_pop = false;
-    if (word[task.word_pos]) {
+    if (!exit_condition(word, task.word_pos)) {
       // paste
       const plane_node_t *next_node;
       if (_find_child_node(trie, task.node, word[task.word_pos], &next_node)) {
@@ -181,7 +187,7 @@ void fuzzy_search(const trie_t &trie, const char_t* word, size_t max_dist, outpu
     } else {
       // report found word
       if (task.node->value) {
-        output.insert(task.node->value);
+        output(task.node->value, max_dist - task.ttl);
 //        std::cout << "FOUND: " << task.node->value << std::endl;
       }
     }
@@ -361,7 +367,12 @@ void fuzzy_search(
 
 
 template <typename exit_condition_t>
-inline bool trie_find_impl(const trie_t &trie, const char_t* key, exit_condition_t &exit_condition, uint32_t &value) {
+inline bool trie_find_impl(
+    const trie_t &trie,
+    const char_t* key,
+    const exit_condition_t &exit_condition,
+    uint32_t &value
+) {
   const plane_node_t *current_node = trie.root_node;
   for (size_t i = 0; !exit_condition(key, i); ++i) {
     const plane_node_t *next_node;
@@ -396,3 +407,48 @@ bool trie_find(const trie_t &trie, const char_t* key, size_t key_len, uint32_t &
   str_len_exit_condition_t exit_condition(key_len);
   return trie_find_impl(trie, key, exit_condition, value);
 }
+
+
+
+
+template <typename output_t>
+void fuzzy_search(
+    const trie_t &trie,
+    const char_t* word,
+    size_t max_dist,
+    output_t &output
+) {
+  zero_str_exit_condition_t exit_condition;
+  fuzzy_search_impl<zero_str_exit_condition_t, output_t>(trie, word, exit_condition, max_dist, output);
+}
+
+template <typename output_t>
+void fuzzy_search(
+    const trie_t &trie,
+    const char_t* key,
+    size_t key_len,
+    size_t max_dist,
+    output_t &output
+) {
+  str_len_exit_condition_t exit_condition(key_len);
+  fuzzy_search_impl<str_len_exit_condition_t, output_t>(trie, key, exit_condition, max_dist,  output);
+}
+
+template <typename container_t>
+struct inserter_out_t {
+  inserter_out_t(container_t &storage)
+    : storage_(storage) {}
+
+  void operator() (const uint32_t &value, size_t /* distance*/) {
+    storage_.insert(value);
+  } 
+  container_t &storage_;
+};
+
+struct map_out_t {
+  typedef std::map<uint32_t, size_t> storage_t;
+  void operator() (const uint32_t &value, size_t distance) {
+    storage_.insert(std::make_pair(value, distance));
+  }
+  storage_t storage_;
+};
