@@ -27,3 +27,7 @@ TODO: UT for half trie
 
 TODO: fb-trie - two half_tries one with words in straight order - another with reversed words
 TODO: UT for fb-trie
+
+
+BUILD:
+cmake -DCMAKE_INCLUDE_PATH=../gtest-svn/include/ -DCMAKE_LIBRARY_PATH=../gtest-build/ .

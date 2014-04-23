@@ -210,10 +210,15 @@ struct _fuzzy_search_greater_task_t {
     // siblings go in key order
     return 
       lhs.word_node > rhs.word_node or
-      lhs.word_node == rhs.word_node and (
-        lhs.dict_node > rhs.dict_node or
-        lhs.dict_node == rhs.dict_node and
-        lhs.ttl < rhs.ttl
+      (
+        lhs.word_node == rhs.word_node and
+        (
+          lhs.dict_node > rhs.dict_node or
+          (
+            lhs.dict_node == rhs.dict_node and
+            lhs.ttl < rhs.ttl
+          )
+        )
       );
   }
 };

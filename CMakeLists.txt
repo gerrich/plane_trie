@@ -1,5 +1,12 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
+find_package( Boost 1.45.0 COMPONENTS assert)
+include_directories( ${Boost_INCLUDE_DIRS} )
+
+include_directories(${CMAKE_INCLUDE_PATH})
+LINK_DIRECTORIES(${CMAKE_LIBRARY_PATH})
+
+
 enable_testing()
 
 
@@ -15,7 +22,7 @@ add_executable(ask_plane_trie ask_plane_trie.cpp)
 add_executable(ask_half_trie ask_half_trie.cpp)
 
 add_executable(fuzzy_search_plane_trie fuzzy_search_plane_trie.cpp)
-add_executable(fuzzy_search_half_trie fuzzy_search_half_trie.cpp)
+#add_executable(fuzzy_search_half_trie fuzzy_search_half_trie.cpp)
 
 add_executable(fuzzy_intersection_plane_trie
   fuzzy_intersection_plane_trie.cpp

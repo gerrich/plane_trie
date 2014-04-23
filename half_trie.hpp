@@ -66,6 +66,7 @@ size_t load_half_trie(void *data, size_t size, half_trie_t &half_trie) {
   half_trie.size_ = size;  
   half_trie.second_offset = header_size + prefix_size;
   half_trie.offset_list = (size_t*)(((char*)data) +  header_size + prefix_size + second_size);
+  return -1; // DUMN
 }
 
 template <typename output_t>

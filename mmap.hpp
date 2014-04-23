@@ -26,7 +26,11 @@ public:
     size_ = statbuf.st_size;
 
     /* mmap the input file */
-    if ((data_ = mmap (0, size_, PROT_READ, MAP_POPULATE|MAP_PRIVATE, fd_, 0)) == (caddr_t) -1)
+    if ((data_ = mmap (0, size_, PROT_READ, 
+#ifdef __linux
+      MAP_POPULATE|
+#endif 
+      MAP_PRIVATE, fd_, 0)) == (caddr_t) -1)
       throw 3; //err_sys ("mmap error for input");
   }
 
