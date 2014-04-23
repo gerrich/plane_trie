@@ -1,6 +1,13 @@
 #pragma once
 
-#include "plane_trie.hpp"
+//#include "plane_trie.hpp"
+#include <cstdio>
+#include <iostream>
+
+#include <boost/static_assert.hpp>
+
+#include "temp_node.hpp"
+#include "utils.hpp"
 
 inline size_t _write(FILE* file, void* data, size_t size) {
   return fwrite(data, 1, size, file);

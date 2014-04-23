@@ -14,19 +14,21 @@
 #include <boost/static_assert.hpp>
 
 #include "queue.hpp"
+#include "types.hpp"
+#include "temp_node.hpp"
+#include "utils.hpp"
 
 // fast load trie
 // build from sorted string list
 // fast read only access
-typedef char char_t;
-typedef uint32_t value_t; // word_id
 
+/*
 struct plane_node_t {
   value_t value;
   uint32_t child_count;
 };
-
-
+*/
+/*
 struct temp_node_t {
   temp_node_t() : value(0) {}
   value_t value;
@@ -35,6 +37,7 @@ struct temp_node_t {
   std::vector<temp_node_t*> ptr_list;
   std::vector<size_t> offset_list;
 };
+*/
 
 struct trie_t {
   plane_node_t *root_node;
@@ -42,20 +45,12 @@ struct trie_t {
   void* addr;
 };
 
-inline size_t round_up_8(size_t size) {
-  return ((size % 8) ? (size - size % 8 + 8) : (size));
-//  return ((size & (not size_t(0x07))) | ((size & size_t(7)) ? 8 : 0));
-}
-inline size_t round_up_4(size_t size) {
-  return ((size & (not size_t(0x03))) | ((size & size_t(3)) ? 4 : 0));
-}
-
 BOOST_STATIC_ASSERT(sizeof(plane_node_t) == 8);
-
+/*
 size_t calc_node_size(const temp_node_t *node) {
   return sizeof(plane_node_t) + node->offset_list.size() * sizeof(void*) + round_up_8(node->key_list.size());
 }
-
+*/
 
 // load trie structure from mapped region
 void load_trie(void* addr, size_t size, trie_t& trie) {
