@@ -1,6 +1,7 @@
 #pragma once
 #include "half_trie.hpp"
 #include "plane_trie_build.hpp"
+#include "file_writer.hpp"
 
 bool str_eq(const char_t *s1, size_t l1, const char_t* s2, size_t l2) {
   if (l1 != l2) return false;
